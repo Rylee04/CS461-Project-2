@@ -1,0 +1,175 @@
+import random
+import numpy as np
+
+# Define constants for the genetic algorithm
+POPULATION_SIZE = 500
+MUTATION_RATE = 0.01
+GENERATIONS = 100
+
+# Activities, Rooms, and Time slots
+activities = [
+    {"name": "SLA100A", "expected_enrollment": 50, "preferred_facilitators": ["Glen", "Lock", "Banks", "Zeldin"], "other_facilitators": ["Numen", "Richards"]},
+    {"name": "SLA100B", "expected_enrollment": 50, "preferred_facilitators": ["Glen", "Lock", "Banks", "Zeldin"], "other_facilitators": ["Numen", "Richards"]},
+    {"name": "SLA191A", "expected_enrollment": 50, "preferred_facilitators": ["Glen", "Lock", "Banks", "Zeldin"], "other_facilitators": ["Numen", "Richards"]},
+    {"name": "SLA191B", "expected_enrollment": 50, "preferred_facilitators": ["Glen", "Lock", "Banks", "Zeldin"], "other_facilitators": ["Numen", "Richards"]},
+    {"name": "SLA201", "expected_enrollment": 50, "preferred_facilitators": ["Glen", "Banks", "Zeldin", "Shaw"], "other_facilitators": ["Numen", "Richards", "Singer"]},
+    # Continue for all activities...
+]
+
+rooms = [
+    {"name": "Slater 003", "capacity": 45},
+    {"name": "Roman 216", "capacity": 30},
+    {"name": "Loft 206", "capacity": 75},
+    {"name": "Roman 201", "capacity": 50},
+    {"name": "Loft 310", "capacity": 108},
+    {"name": "Beach 201", "capacity": 60},
+    {"name": "Beach 301", "capacity": 75},
+    # Add other rooms if needed...
+]
+
+time_slots = ["10 AM", "11 AM", "12 PM", "1 PM", "2 PM", "3 PM"]
+
+facilitators = ["Lock", "Glen", "Banks", "Richards", "Shaw", "Singer", "Uther", "Tyler", "Numen", "Zeldin"]
+
+# Generate random schedules
+def generate_random_schedule():
+    schedule = []
+    for activity in activities:
+        room = random.choice(rooms)
+        time_slot = random.choice(time_slots)
+        facilitator = random.choice(facilitators)
+        schedule.append({
+            "activity": activity["name"],
+            "room": room,
+            "time": time_slot,
+            "facilitator": facilitator
+        })
+    return schedule
+
+# Fitness function to evaluate a schedule
+def fitness(schedule):
+    score = 0
+    facilitator_load = {fac: 0 for fac in facilitators}  # Track facilitator load
+    facilitator_time_slots = {fac: [] for fac in facilitators}  # Track facilitator time slots
+
+    for activity in schedule:
+        # Room size evaluation
+        activity_details = next(a for a in activities if a["name"] == activity["activity"])
+        expected_enrollment = activity_details["expected_enrollment"]
+        room_capacity = activity["room"]["capacity"]
+
+        # Room size evaluation
+        if room_capacity < expected_enrollment:
+            score -= 0.5  # Room too small
+        elif room_capacity > 3 * expected_enrollment:
+            score -= 0.2  # Room too large
+        elif room_capacity > 6 * expected_enrollment:
+            score -= 0.4  # Room excessively large
+        else:
+            score += 0.3  # Room is adequate
+
+        # Facilitator evaluation
+        facilitator = activity["facilitator"]
+        if facilitator in activity_details["preferred_facilitators"]:
+            score += 0.5
+        elif facilitator in activity_details["other_facilitators"]:
+            score += 0.2
+        else:
+            score -= 0.1
+
+        # Track facilitator load and time slots
+        facilitator_load[facilitator] += 1
+        facilitator_time_slots[facilitator].append(activity["time"])
+
+    # Apply penalties for facilitator overloading or consecutive time slots
+    for fac, load in facilitator_load.items():
+        if load > 4:
+            score -= 0.5  # Penalty for overseeing more than 4 activities
+        if load == 1 or load == 2:
+            score -= 0.4  # Penalty for overseeing only 1 or 2 activities (except Tyler)
+        if fac == "Tyler" and load < 2:
+            score += 0.5  # No penalty for Tyler with < 2 activities
+
+        # Check for consecutive time slots
+        times = sorted(facilitator_time_slots[fac], key=lambda t: time_slots.index(t))
+        for i in range(1, len(times)):
+            if time_slots.index(times[i]) == time_slots.index(times[i - 1]) + 1:
+                score -= 0.2  # Penalty for consecutive time slots
+
+    # Special rules for SLA101 and SLA191
+    sla101_times = [act["time"] for act in schedule if act["activity"] in ["SLA100A", "SLA100B"]]
+    sla191_times = [act["time"] for act in schedule if act["activity"] in ["SLA191A", "SLA191B"]]
+
+    if sla101_times and sla191_times:
+        if abs(time_slots.index(sla101_times[0]) - time_slots.index(sla191_times[0])) == 1:
+            score += 0.5  # Bonus if SLA101 and SLA191 are consecutive
+
+    return score
+
+# Selection: Select two parents based on fitness probability
+def select_parents(population):
+    fitness_scores = [fitness(individual) for individual in population]
+    total_fitness = sum(fitness_scores)
+
+    # Normalize the fitness scores to a probability distribution
+    probabilities = [score / total_fitness for score in fitness_scores]
+
+    # Use random.choices to select two parents based on probabilities
+    parent1 = random.choices(population, probabilities, k=1)[0]
+    parent2 = random.choices(population, probabilities, k=1)[0]
+
+    return parent1, parent2
+
+# Crossover function to combine two parents and create offspring
+def crossover(parent1, parent2):
+    crossover_point = random.randint(1, len(parent1) - 1)
+    child1 = parent1[:crossover_point] + parent2[crossover_point:]
+    child2 = parent2[:crossover_point] + parent1[crossover_point:]
+    return child1, child2
+
+# Mutation function to randomly modify a schedule
+def mutate(schedule, mutation_rate):
+    for activity in schedule:
+        if random.random() < mutation_rate:
+            activity["room"] = random.choice(rooms)
+            activity["time"] = random.choice(time_slots)
+            activity["facilitator"] = random.choice(facilitators)
+
+# Main genetic algorithm loop
+def genetic_algorithm():
+    # Step 1: Initialize population
+    population = [generate_random_schedule() for _ in range(POPULATION_SIZE)]
+    current_mutation_rate = MUTATION_RATE
+
+    for generation in range(GENERATIONS):
+        new_population = []
+        for _ in range(POPULATION_SIZE // 2):  # Each pair produces 2 offspring
+            parent1, parent2 = select_parents(population)
+            child1, child2 = crossover(parent1, parent2)
+            mutate(child1, current_mutation_rate)
+            mutate(child2, current_mutation_rate)
+            new_population.append(child1)
+            new_population.append(child2)
+
+        population = new_population
+
+        # Calculate and report best fitness in each generation
+        fitness_scores = [fitness(individual) for individual in population]
+        best_fitness = max(fitness_scores)
+        print(f"Generation {generation}, Best fitness: {best_fitness}")
+
+        # Adapt mutation rate: halve if improvements stabilize
+        if generation > 0 and abs(fitness_scores[0] - best_fitness) < 0.01:
+            current_mutation_rate /= 2
+
+    # After all generations, return the best schedule
+    best_schedule = max(population, key=fitness)
+    return best_schedule
+
+# Running the genetic algorithm
+best_schedule = genetic_algorithm()
+
+# Print the best schedule found
+print("Best Schedule:")
+for activity in best_schedule:
+    print(f"Activity {activity['activity']} in Room {activity['room']['name']} at {activity['time']} with Facilitator {activity['facilitator']}")
