@@ -13,7 +13,12 @@ activities = [
     {"name": "SLA191A", "expected_enrollment": 50, "preferred_facilitators": ["Glen", "Lock", "Banks", "Zeldin"], "other_facilitators": ["Numen", "Richards"]},
     {"name": "SLA191B", "expected_enrollment": 50, "preferred_facilitators": ["Glen", "Lock", "Banks", "Zeldin"], "other_facilitators": ["Numen", "Richards"]},
     {"name": "SLA201", "expected_enrollment": 50, "preferred_facilitators": ["Glen", "Banks", "Zeldin", "Shaw"], "other_facilitators": ["Numen", "Richards", "Singer"]},
-    # Continue for all activities...
+    {"name": "SLA291", "expected_enrollment": 50, "preferred_facilitators": ["Lock", "Banks", "Zeldin", "Singer"], "other_facilitators": ["Numen", "Richards", "Shaw", "Tyler"]},
+    {"name": "SLA303", "expected_enrollment": 60, "preferred_facilitators": ["Glen", "Zeldin", "Banks"], "other_facilitators": ["Numen", "Singer", "Shaw"]},
+    {"name": "SLA304", "expected_enrollment": 25, "preferred_facilitators": ["Glen", "Banks", "Tyler"], "other_facilitators": ["Numen", "Singer", "Shaw", "Richards", "Uther", "Zeldin"]},
+    {"name": "SLA394", "expected_enrollment": 20, "preferred_facilitators": ["Tyler", "Singer"], "other_facilitators": ["Richards", "Zeldin"]},
+    {"name": "SLA449", "expected_enrollment": 60, "preferred_facilitators": ["Tyler", "Singer", "Shaw"], "other_facilitators": ["Zeldin", "Uther"]},
+    {"name": "SLA451", "expected_enrollment": 100, "preferred_facilitators": ["Tyler", "Singer", "Shaw"], "other_facilitators": ["Zeldin", "Uther", "Richards", "Banks"]}
 ]
 
 rooms = [
@@ -24,11 +29,11 @@ rooms = [
     {"name": "Loft 310", "capacity": 108},
     {"name": "Beach 201", "capacity": 60},
     {"name": "Beach 301", "capacity": 75},
-    # Add other rooms if needed...
+    {"name": "Logos 325", "capacity": 450},
+    {"name": "Frank 119", "capacity": 60}
 ]
 
 time_slots = ["10 AM", "11 AM", "12 PM", "1 PM", "2 PM", "3 PM"]
-
 facilitators = ["Lock", "Glen", "Banks", "Richards", "Shaw", "Singer", "Uther", "Tyler", "Numen", "Zeldin"]
 
 # Generate random schedules
